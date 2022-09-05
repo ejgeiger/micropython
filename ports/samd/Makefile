@@ -97,6 +97,7 @@ MPY_CROSS_FLAGS += -march=$(MPY_CROSS_MCU_ARCH)
 
 SRC_C += \
 	mcu/$(MCU_SERIES_LOWER)/clock_config.c \
+	dma_manager.c \
 	help.c \
 	machine_bitstream.c \
 	machine_dac.c \
@@ -115,6 +116,7 @@ SRC_C += \
 	samd_qspiflash.c \
 	samd_soc.c \
 	samd_spiflash.c \
+	tc_manager.c \
 	tusb_port.c \
 
 SHARED_SRC_C += \
