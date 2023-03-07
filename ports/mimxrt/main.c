@@ -55,8 +55,6 @@ void update_msc_state(void);
 int main(void) {
     board_init();
     ticks_init();
-    tusb_init();
-    led_init();
     pendsv_init();
 
     #if MICROPY_PY_LWIP
