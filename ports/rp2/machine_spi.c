@@ -80,9 +80,9 @@ typedef struct _machine_spi_obj_t {
     uint8_t phase;
     uint8_t bits;
     uint8_t firstbit;
-    uint8_t sck;
-    uint8_t mosi;
-    uint8_t miso;
+    int8_t sck;
+    int8_t mosi;
+    int8_t miso;
     uint32_t baudrate;
 } machine_spi_obj_t;
 
@@ -103,7 +103,7 @@ STATIC machine_spi_obj_t machine_spi_obj[] = {
 
 STATIC void machine_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "SPI(%u, baudrate=%u, polarity=%u, phase=%u, bits=%u, sck=%u, mosi=%u, miso=%u)",
+    mp_printf(print, "SPI(%u, baudrate=%u, polarity=%u, phase=%u, bits=%u, sck=%d, mosi=%d, miso=%d)",
         self->spi_id, self->baudrate, self->polarity, self->phase, self->bits,
         self->sck, self->mosi, self->miso);
 }
@@ -117,9 +117,9 @@ mp_obj_t machine_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
         { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = DEFAULT_SPI_PHASE} },
         { MP_QSTR_bits,     MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = DEFAULT_SPI_BITS} },
         { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = DEFAULT_SPI_FIRSTBIT} },
-        { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE} },
-        { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE} },
-        { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE} },
+        { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_OBJ_NULL} },
+        { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_OBJ_NULL} },
+        { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_OBJ_NULL} },
     };
 
     // Parse the arguments.
@@ -135,25 +135,34 @@ mp_obj_t machine_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
     // Get static peripheral object.
     machine_spi_obj_t *self = (machine_spi_obj_t *)&machine_spi_obj[spi_id];
 
-    // Set SCK/MOSI/MISO pins if configured.
-    if (args[ARG_sck].u_obj != mp_const_none) {
-        int sck = mp_hal_get_pin_obj(args[ARG_sck].u_obj);
-        if (!IS_VALID_SCK(self->spi_id, sck)) {
-            mp_raise_ValueError(MP_ERROR_TEXT("bad SCK pin"));
+    // Set SCK/MOSI/MISO pins if configured. 
+    if (args[ARG_sck].u_obj != MP_OBJ_NULL) {
+        int sck = -1;
+        if (args[ARG_sck].u_obj != mp_const_none) {
+            sck = mp_hal_get_pin_obj(args[ARG_sck].u_obj);
+            if (!IS_VALID_SCK(self->spi_id, sck)) {
+                mp_raise_ValueError(MP_ERROR_TEXT("bad SCK pin"));
+            }
         }
         self->sck = sck;
     }
-    if (args[ARG_mosi].u_obj != mp_const_none) {
-        int mosi = mp_hal_get_pin_obj(args[ARG_mosi].u_obj);
-        if (!IS_VALID_MOSI(self->spi_id, mosi)) {
-            mp_raise_ValueError(MP_ERROR_TEXT("bad MOSI pin"));
+    if (args[ARG_mosi].u_obj != MP_OBJ_NULL) {
+        int mosi = -1;
+        if (args[ARG_mosi].u_obj != mp_const_none) {
+            mosi = mp_hal_get_pin_obj(args[ARG_mosi].u_obj);
+            if (!IS_VALID_MOSI(self->spi_id, mosi)) {
+                mp_raise_ValueError(MP_ERROR_TEXT("bad MOSI pin"));
+            }
         }
         self->mosi = mosi;
     }
-    if (args[ARG_miso].u_obj != mp_const_none) {
-        int miso = mp_hal_get_pin_obj(args[ARG_miso].u_obj);
-        if (!IS_VALID_MISO(self->spi_id, miso)) {
-            mp_raise_ValueError(MP_ERROR_TEXT("bad MISO pin"));
+    if (args[ARG_miso].u_obj != MP_OBJ_NULL) {
+        int miso = -1;
+        if (args[ARG_miso].u_obj != mp_const_none) {
+            miso = mp_hal_get_pin_obj(args[ARG_miso].u_obj);
+            if (!IS_VALID_MISO(self->spi_id, miso)) {
+                mp_raise_ValueError(MP_ERROR_TEXT("bad MISO pin"));
+            }
         }
         self->miso = miso;
     }
@@ -172,9 +181,15 @@ mp_obj_t machine_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
         spi_init(self->spi_inst, self->baudrate);
         self->baudrate = spi_set_baudrate(self->spi_inst, self->baudrate);
         spi_set_format(self->spi_inst, self->bits, self->polarity, self->phase, self->firstbit);
-        gpio_set_function(self->sck, GPIO_FUNC_SPI);
-        gpio_set_function(self->miso, GPIO_FUNC_SPI);
-        gpio_set_function(self->mosi, GPIO_FUNC_SPI);
+        if (self->sck != -1) {
+            gpio_set_function(self->sck, GPIO_FUNC_SPI);
+        }
+        if (self->miso != -1) {
+            gpio_set_function(self->miso, GPIO_FUNC_SPI);
+        }
+        if (self->mosi != -1) {
+            gpio_set_function(self->mosi, GPIO_FUNC_SPI);
+        }
     }
 
     return MP_OBJ_FROM_PTR(self);
