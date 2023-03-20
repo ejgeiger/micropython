@@ -135,24 +135,18 @@ mp_obj_t machine_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
     // Get static peripheral object.
     machine_spi_obj_t *self = (machine_spi_obj_t *)&machine_spi_obj[spi_id];
 
-    // Set SCK/MOSI/MISO pins if configured. 
+    // Set SCK/MOSI/MISO pins if configured.
     if (args[ARG_sck].u_obj != MP_OBJ_NULL) {
-        int sck = -1;
-        if (args[ARG_sck].u_obj != mp_const_none) {
-            sck = mp_hal_get_pin_obj(args[ARG_sck].u_obj);
-            if (!IS_VALID_SCK(self->spi_id, sck)) {
-                mp_raise_ValueError(MP_ERROR_TEXT("bad SCK pin"));
-            }
+        int sck = mp_hal_get_pin_obj(args[ARG_sck].u_obj);
+        if (!IS_VALID_SCK(self->spi_id, sck)) {
+            mp_raise_ValueError(MP_ERROR_TEXT("bad SCK pin"));
         }
         self->sck = sck;
     }
     if (args[ARG_mosi].u_obj != MP_OBJ_NULL) {
-        int mosi = -1;
-        if (args[ARG_mosi].u_obj != mp_const_none) {
-            mosi = mp_hal_get_pin_obj(args[ARG_mosi].u_obj);
-            if (!IS_VALID_MOSI(self->spi_id, mosi)) {
-                mp_raise_ValueError(MP_ERROR_TEXT("bad MOSI pin"));
-            }
+        int mosi = mp_hal_get_pin_obj(args[ARG_mosi].u_obj);
+        if (!IS_VALID_MOSI(self->spi_id, mosi)) {
+            mp_raise_ValueError(MP_ERROR_TEXT("bad MOSI pin"));
         }
         self->mosi = mosi;
     }
@@ -181,14 +175,10 @@ mp_obj_t machine_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
         spi_init(self->spi_inst, self->baudrate);
         self->baudrate = spi_set_baudrate(self->spi_inst, self->baudrate);
         spi_set_format(self->spi_inst, self->bits, self->polarity, self->phase, self->firstbit);
-        if (self->sck != -1) {
-            gpio_set_function(self->sck, GPIO_FUNC_SPI);
-        }
+        gpio_set_function(self->sck, GPIO_FUNC_SPI);
+        gpio_set_function(self->mosi, GPIO_FUNC_SPI);
         if (self->miso != -1) {
             gpio_set_function(self->miso, GPIO_FUNC_SPI);
-        }
-        if (self->mosi != -1) {
-            gpio_set_function(self->mosi, GPIO_FUNC_SPI);
         }
     }
 
