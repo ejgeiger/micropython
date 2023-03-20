@@ -280,16 +280,24 @@ STATIC mp_obj_t machine_hard_spi_make_new(mp_arg_val_t *args) {
     const machine_hard_spi_obj_t *self = &machine_hard_spi_obj[spi_id];
 
     // here we would check the sck/mosi/miso pins and configure them
-    if (args[ARG_NEW_sck].u_obj != MP_OBJ_NULL
-        && args[ARG_NEW_mosi].u_obj != MP_OBJ_NULL
-        && args[ARG_NEW_miso].u_obj != MP_OBJ_NULL) {
-
+    if (args[ARG_NEW_sck].u_obj != MP_OBJ_NULL) {
         self->p_config->sck_pin  = mp_hal_get_pin_obj(args[ARG_NEW_sck].u_obj)->pin;
-        self->p_config->mosi_pin = mp_hal_get_pin_obj(args[ARG_NEW_mosi].u_obj)->pin;
-        self->p_config->miso_pin = mp_hal_get_pin_obj(args[ARG_NEW_miso].u_obj)->pin;
     } else {
         self->p_config->sck_pin  = MICROPY_HW_SPI0_SCK;
+
+    }
+    if  (args[ARG_NEW_mosi].u_obj != MP_OBJ_NULL) {
+        self->p_config->mosi_pin = mp_hal_get_pin_obj(args[ARG_NEW_mosi].u_obj)->pin;
+    } else {
         self->p_config->mosi_pin = MICROPY_HW_SPI0_MOSI;
+    }
+    if (args[ARG_NEW_miso].u_obj != MP_OBJ_NULL) {
+        if (args[ARG_NEW_miso].u_obj != mp_const_none) {
+            self->p_config->miso_pin = mp_hal_get_pin_obj(args[ARG_NEW_miso].u_obj)->pin;
+        } else {
+            self->p_config->miso_pin = NRFX_SPI_PIN_NOT_USED;
+        }
+    } else {
         self->p_config->miso_pin = MICROPY_HW_SPI0_MISO;
     }
 
