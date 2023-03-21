@@ -39,6 +39,8 @@
 #define MICROPY_PY_MACHINE_SPI_LSB (1)
 #endif
 
+#define PIN_NOT_USED  (-1)
+
 /******************************************************************************/
 // MicroPython bindings for generic machine.SPI
 
@@ -195,7 +197,11 @@ STATIC mp_obj_t mp_machine_soft_spi_make_new(const mp_obj_type_t *type, size_t n
     }
     self->spi.sck = mp_hal_get_pin_obj(args[ARG_sck].u_obj);
     self->spi.mosi = mp_hal_get_pin_obj(args[ARG_mosi].u_obj);
-    self->spi.miso = mp_hal_get_pin_obj(args[ARG_miso].u_obj);
+    if (args[ARG_miso].u_obj != mp_const_none) {
+        self->spi.miso = mp_hal_get_pin_obj(args[ARG_miso].u_obj);
+    } else {
+        self->spi.miso = (mp_hal_pin_obj_t)PIN_NOT_USED;
+    }
 
     // configure bus
     mp_soft_spi_ioctl(&self->spi, MP_SPI_IOCTL_INIT);
@@ -234,7 +240,11 @@ STATIC void mp_machine_soft_spi_init(mp_obj_base_t *self_in, size_t n_args, cons
         self->spi.mosi = mp_hal_get_pin_obj(args[ARG_mosi].u_obj);
     }
     if (args[ARG_miso].u_obj != MP_OBJ_NULL) {
-        self->spi.miso = mp_hal_get_pin_obj(args[ARG_miso].u_obj);
+        if (args[ARG_miso].u_obj != mp_const_none) {
+            self->spi.miso = mp_hal_get_pin_obj(args[ARG_miso].u_obj);
+        } else {
+            self->spi.miso = (mp_hal_pin_obj_t)PIN_NOT_USED;
+        }
     }
 
     // configure bus
