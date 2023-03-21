@@ -85,7 +85,7 @@ static const iomux_table_t iomux_table[] = {
     IOMUX_TABLE_SPI
 };
 
-bool lpspi_set_iomux(int8_t spi, uint8_t drive, int8_t cs) {
+bool lpspi_set_iomux(int8_t spi, uint8_t drive, int8_t cs, int8_t enable_miso) {
     int index = (spi - 1) * 5;
 
     if (SCK.muxRegister != 0) {
@@ -109,9 +109,11 @@ bool lpspi_set_iomux(int8_t spi, uint8_t drive, int8_t cs) {
         IOMUXC_SetPinConfig(SDO.muxRegister, SDO.muxMode, SDO.inputRegister, SDO.inputDaisy, SDO.configRegister,
             pin_generate_config(PIN_PULL_UP_100K, PIN_MODE_OUT, drive, SDO.configRegister));
 
-        IOMUXC_SetPinMux(SDI.muxRegister, SDI.muxMode, SDI.inputRegister, SDI.inputDaisy, SDI.configRegister, 0U);
-        IOMUXC_SetPinConfig(SDI.muxRegister, SDI.muxMode, SDI.inputRegister, SDI.inputDaisy, SDI.configRegister,
-            pin_generate_config(PIN_PULL_UP_100K, PIN_MODE_IN, drive, SDI.configRegister));
+        if (enable_miso) {
+            IOMUXC_SetPinMux(SDI.muxRegister, SDI.muxMode, SDI.inputRegister, SDI.inputDaisy, SDI.configRegister, 0U);
+            IOMUXC_SetPinConfig(SDI.muxRegister, SDI.muxMode, SDI.inputRegister, SDI.inputDaisy, SDI.configRegister,
+                pin_generate_config(PIN_PULL_UP_100K, PIN_MODE_IN, drive, SDI.configRegister));
+        }
 
         return true;
     } else {
@@ -129,7 +131,7 @@ STATIC void machine_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_prin
 }
 
 mp_obj_t machine_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_gap_ns, ARG_drive, ARG_cs };
+    enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_gap_ns, ARG_drive, ARG_cs, ARG_miso };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_id,       MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = DEFAULT_SPI_BAUDRATE} },
@@ -139,7 +141,8 @@ mp_obj_t machine_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
         { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = DEFAULT_SPI_FIRSTBIT} },
         { MP_QSTR_gap_ns,   MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
         { MP_QSTR_drive,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = DEFAULT_SPI_DRIVE} },
-        { MP_QSTR_cs,       MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_cs,       MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
     };
 
     // Parse the arguments.
@@ -181,15 +184,22 @@ mp_obj_t machine_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
     }
     self->master_config->lastSckToPcsDelayInNanoSec = self->master_config->betweenTransferDelayInNanoSec;
     self->master_config->pcsToSckDelayInNanoSec = self->master_config->betweenTransferDelayInNanoSec;
-    int8_t cs = args[ARG_cs].u_int;
-    // In the SPI master_config for automatic CS the value cs=0 is set already,
-    // so only cs=1 has to be addressed here. The case cs == -1 for manual CS is handled
-    // in the function spi_set_iomux() and the value in the master_config can stay at 0.
-    if (cs == 1) {
-        self->master_config->whichPcs = cs;
+
+    int cs = 0;
+    if (args[ARG_cs].u_obj != MP_OBJ_NULL) {
+        if (args[ARG_cs].u_obj == mp_const_none) {
+            cs = -1;
+        } else {
+            cs = mp_obj_get_int(args[ARG_cs].u_obj);
+            if (cs == 0 || cs == 1) {
+                self->master_config->whichPcs = cs;
+            }
+        }
     }
+    bool enable_miso = (args[ARG_miso].u_obj == mp_const_none) ? false : true;
+
     LPSPI_MasterInit(self->spi_inst, self->master_config, BOARD_BOOTCLOCKRUN_LPSPI_CLK_ROOT);
-    lpspi_set_iomux(spi_index_table[spi_id], drive, cs);
+    lpspi_set_iomux(spi_index_table[spi_id], drive, cs, enable_miso);
 
     return MP_OBJ_FROM_PTR(self);
 }
