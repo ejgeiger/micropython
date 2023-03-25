@@ -139,6 +139,17 @@
 #define MICROPY_PY_PLATFORM                 (1)
 #define MICROPY_PLATFORM_VERSION            "ASF4"
 
+#ifndef MICROPY_PY_MACHINE_DAC_TIMED
+#define MICROPY_PY_MACHINE_DAC_TIMED        (1)
+#endif
+#ifndef MICROPY_PY_MACHINE_ADC_TIMED
+#define MICROPY_PY_MACHINE_ADC_TIMED        (1)
+#endif
+#if MICROPY_PY_MACHINE_DAC_TIMED || MICROPY_PY_MACHINE_ADC_TIMED
+#define MICROPY_HW_DMA_MANAGER              (1)
+#define MICROPY_HW_TC_MANAGER               (1)
+#endif
+
 #define MP_STATE_PORT MP_STATE_VM
 
 // Additional entries for use with pendsv_schedule_dispatch.
