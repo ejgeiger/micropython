@@ -31,7 +31,7 @@ Wrapper to setup HSPI/SPI GPIO pins and default SPI clock
 Not used in MicroPython.
 */
 void spi_init(uint8_t spi_no) {
-    spi_init_gpio(spi_no, SPI_CLK_USE_DIV);
+    spi_init_gpio(spi_no, SPI_CLK_USE_DIV, true);
     spi_clock(spi_no, SPI_CLK_PREDIV, SPI_CLK_CNTDIV);
     spi_tx_byte_order(spi_no, SPI_BYTE_ORDER_HIGH_TO_LOW);
     spi_rx_byte_order(spi_no, SPI_BYTE_ORDER_HIGH_TO_LOW);
@@ -77,7 +77,7 @@ Initialise the GPIO pins for use as SPI pins.
         SPI_CLK_80MHZ_NODIV (1) if using 80MHz for SPI clock.
         SPI_CLK_USE_DIV     (0) if using divider for lower speed.
 */
-void spi_init_gpio(uint8_t spi_no, uint8_t sysclk_as_spiclk) {
+void spi_init_gpio(uint8_t spi_no, uint8_t sysclk_as_spiclk, bool enable_miso) {
     uint32_t clock_div_flag = 0;
     if (sysclk_as_spiclk) {
         clock_div_flag = 0x0001;
@@ -92,8 +92,10 @@ void spi_init_gpio(uint8_t spi_no, uint8_t sysclk_as_spiclk) {
     } else if (spi_no == HSPI) {
         // Set bit 9 if 80MHz sysclock required
         WRITE_PERI_REG(PERIPHS_IO_MUX, 0x105 | (clock_div_flag << 9));
-        // GPIO12 is HSPI MISO pin (Master Data In)
-        PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);
+        if (enable_miso) {
+            // GPIO12 is HSPI MISO pin (Master Data In)
+            PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDI_U, 2);
+        }
         // GPIO13 is HSPI MOSI pin (Master Data Out)
         PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTCK_U, 2);
         // GPIO14 is HSPI CLK pin (Clock)

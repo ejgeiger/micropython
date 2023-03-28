@@ -53,7 +53,7 @@
 
 void spi_init(uint8_t spi_no);
 void spi_mode(uint8_t spi_no, uint8_t spi_cpha, uint8_t spi_cpol);
-void spi_init_gpio(uint8_t spi_no, uint8_t sysclk_as_spiclk);
+void spi_init_gpio(uint8_t spi_no, uint8_t sysclk_as_spiclk, bool enable_miso);
 void spi_clock(uint8_t spi_no, uint16_t prediv, uint8_t cntdiv);
 void spi_tx_byte_order(uint8_t spi_no, uint8_t byte_order);
 void spi_rx_byte_order(uint8_t spi_no, uint8_t byte_order);

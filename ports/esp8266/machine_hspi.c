@@ -103,11 +103,12 @@ STATIC void machine_hspi_print(const mp_print_t *print, mp_obj_t self_in, mp_pri
 STATIC void machine_hspi_init(mp_obj_base_t *self_in, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     machine_hspi_obj_t *self = (machine_hspi_obj_t *)self_in;
 
-    enum { ARG_baudrate, ARG_polarity, ARG_phase };
+    enum { ARG_baudrate, ARG_polarity, ARG_phase, ARG_miso };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = -1} },
         { MP_QSTR_polarity, MP_ARG_INT, {.u_int = -1} },
         { MP_QSTR_phase, MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_miso, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args),
@@ -122,9 +123,12 @@ STATIC void machine_hspi_init(mp_obj_base_t *self_in, size_t n_args, const mp_ob
     if (args[ARG_phase].u_int != -1) {
         self->phase = args[ARG_phase].u_int;
     }
+
+    bool enable_miso = (args[ARG_miso].u_obj == mp_const_none) ? false : true;
+
     if (self->baudrate == 80000000L) {
         // Special case for full speed.
-        spi_init_gpio(HSPI, SPI_CLK_80MHZ_NODIV);
+        spi_init_gpio(HSPI, SPI_CLK_80MHZ_NODIV, enable_miso);
         spi_clock(HSPI, 0, 0);
     } else if (self->baudrate > 40000000L) {
         mp_raise_ValueError(MP_ERROR_TEXT("impossible baudrate"));
@@ -136,7 +140,7 @@ STATIC void machine_hspi_init(mp_obj_base_t *self_in, size_t n_args, const mp_ob
             mp_raise_ValueError(MP_ERROR_TEXT("impossible baudrate"));
         }
         self->baudrate = 80000000L / (prediv * cntdiv);
-        spi_init_gpio(HSPI, SPI_CLK_USE_DIV);
+        spi_init_gpio(HSPI, SPI_CLK_USE_DIV, enable_miso);
         spi_clock(HSPI, prediv, cntdiv);
     }
     // TODO: Make the byte order configurable too (discuss param names)
