@@ -30,6 +30,7 @@
 #include "py/mphal.h"
 #include "extmod/modbluetooth.h"
 #include "extmod/mpbthci.h"
+#include "extmod/modmachine.h"
 #include "shared/runtime/softtimer.h"
 #include "modmachine.h"
 #include "mpbthciport.h"
