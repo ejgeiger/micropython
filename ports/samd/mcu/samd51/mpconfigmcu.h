@@ -33,6 +33,19 @@
 #define MICROPY_PY_RANDOM_SEED_INIT_FUNC (trng_random_u32())
 unsigned long trng_random_u32(void);
 
+#ifndef MICROPY_PY_MACHINE_PIN_BOARD_CPU
+#define MICROPY_PY_MACHINE_PIN_BOARD_CPU (1)
+#endif
+
+#if MICROPY_PY_BLUETOOTH
+
+#define MICROPY_PY_BLUETOOTH_ENABLE_CENTRAL_MODE (1)
+#define MICROPY_PY_BLUETOOTH_ENABLE_L2CAP_CHANNELS (1)
+// Bluetooth code only runs in the scheduler, no locking/mutex required.
+#define MICROPY_PY_BLUETOOTH_ENTER uint32_t atomic_state = 0;
+#define MICROPY_PY_BLUETOOTH_EXIT (void)atomic_state;
+#endif
+
 // fatfs configuration used in ffconf.h
 #define MICROPY_FATFS_ENABLE_LFN            (1)
 #define MICROPY_FATFS_RPATH                 (2)
