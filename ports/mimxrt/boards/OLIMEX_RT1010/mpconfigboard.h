@@ -15,21 +15,22 @@
 
 // Define mapping logical UART # to hardware UART #
 // LPUART1 on RX/TX    -> 1
-// LPUART4 on D5/D6    -> 2
+// LPUART3 on D7/D8    -> 2
+// LPUART4 on D5/D6    -> 3
 
 #define MICROPY_HW_UART_NUM     (sizeof(uart_index_table) / sizeof(uart_index_table)[0])
-#define MICROPY_HW_UART_INDEX   { 0, 1, 4 }
+#define MICROPY_HW_UART_INDEX   { 0, 1, 3, 4 }
 
 #define IOMUX_TABLE_UART \
     { IOMUXC_GPIO_10_LPUART1_TXD }, { IOMUXC_GPIO_09_LPUART1_RXD }, \
     { 0 }, { 0 }, \
-    { 0 }, { 0 }, \
+    { IOMUXC_GPIO_08_LPUART3_TXD }, { IOMUXC_GPIO_07_LPUART3_RXD }, \
     { IOMUXC_GPIO_06_LPUART4_TXD }, { IOMUXC_GPIO_05_LPUART4_RXD },
 
 #define IOMUX_TABLE_UART_CTS_RTS \
     { IOMUXC_GPIO_08_LPUART1_CTS_B }, { IOMUXC_GPIO_07_LPUART1_RTS_B }, \
     { 0 }, { 0 }, \
-    { 0 }, { 0 }, \
+    { IOMUXC_GPIO_AD_14_LPUART3_CTS_B }, { IOMUXC_GPIO_AD_13_LPUART3_RTS_B }, \
     { IOMUXC_GPIO_AD_14_LPUART4_CTS_B }, { IOMUXC_GPIO_AD_13_LPUART4_RTS_B },
 
 #define MICROPY_HW_SPI_INDEX { 0, 1, 2 }
@@ -88,3 +89,24 @@
         I2S_GPIO(3, WS, TX, GPIO_SD_00, IOMUXC_GPIO_SD_00_SAI3_TX_SYNC), /* pin D9 */ \
         I2S_GPIO(3, SD, TX, GPIO_SD_02, IOMUXC_GPIO_SD_02_SAI3_TX_DATA) /* pin D11 */ \
     }
+
+#define MICROPY_HW_WIFI_SPI_ID     (0)
+#define MICROPY_HW_WIFI_SPI_BAUDRATE (8000000)
+
+// NINA_ACK: I2C2_SCL = GPIO_AD_08
+#define MICROPY_HW_NINA_ACK       (pin_GPIO_AD_08)
+// NINA_CS: LPSPI1_PCS0 = GPIO_AD_05
+#define MICROPY_HW_NINA_CS        (pin_GPIO_AD_05)
+// Adafruit shield: NINA_RESET: I2C2_SDA = GPIO_AD_07
+#define MICROPY_HW_NINA_RESET     (pin_GPIO_AD_07)
+
+#define MICROPY_PY_BLUETOOTH_NINAW10 (1)
+
+#define MICROPY_HW_BLE_UART_ID       (2)
+#define MICROPY_HW_BLE_UART_BAUDRATE (115200)
+#define MICROPY_HW_BLE_UART_FLOW_CONTROL (0)
+
+// NINA_RTS: D11 = GPIO_AD_04
+#define MICROPY_HW_NINA_RTS          (pin_GPIO_AD_04)
+// NINA_CTS: I2C2_SCL = GPIO_AD_08
+#define MICROPY_HW_NINA_CTS          MICROPY_HW_NINA_ACK
