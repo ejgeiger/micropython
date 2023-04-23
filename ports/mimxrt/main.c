@@ -55,6 +55,10 @@
 
 #include "systick.h"
 #include "extmod/modnetwork.h"
+#if MICROPY_PY_BLUETOOTH
+#include "extmod/modbluetooth.h"
+#include "mpbthciport.h"
+#endif
 
 extern uint8_t _sstack, _estack, _gc_heap_start, _gc_heap_end;
 
@@ -106,6 +110,9 @@ int main(void) {
         #if MICROPY_PY_NETWORK
         mod_network_init();
         #endif
+        #if MICROPY_PY_BLUETOOTH
+        mp_bluetooth_hci_init();
+        #endif
 
         // Initialise sub-systems.
         readline_init0();
@@ -150,6 +157,9 @@ int main(void) {
         #endif
         #if MICROPY_PY_NETWORK
         mod_network_deinit();
+        #endif
+        #if MICROPY_PY_BLUETOOTH
+        mp_bluetooth_deinit();
         #endif
         machine_uart_deinit_all();
         machine_pwm_deinit_all();
