@@ -100,8 +100,8 @@ typedef struct _machine_hard_uart_obj_t {
     mp_obj_base_t       base;
     const nrfx_uart_t * p_uart;      // Driver instance
     machine_hard_uart_buf_t buf;
-    uint16_t timeout;       // timeout waiting for first char (in ms)
-    uint16_t timeout_char;  // timeout waiting between chars (in ms)
+    uint32_t timeout;       // timeout waiting for first char (in ms)
+    uint32_t timeout_char;  // timeout waiting between chars (in ms)
 } machine_hard_uart_obj_t;
 
 static const nrfx_uart_t instance0 = NRFX_UART_INSTANCE(0);

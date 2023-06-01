@@ -66,8 +66,8 @@ typedef struct _pyb_uart_obj_t {
     bool attached_to_repl;              // whether the UART is attached to REPL
     byte char_width;                    // 0 for 7,8 bit chars, 1 for 9 bit chars
     uint16_t char_mask;                 // 0x7f for 7 bit, 0xff for 8 bit, 0x1ff for 9 bit
-    uint16_t timeout;                   // timeout waiting for first char
-    uint16_t timeout_char;              // timeout waiting between chars
+    uint32_t timeout;                   // timeout waiting for first char
+    uint32_t timeout_char;              // timeout waiting between chars
     uint16_t read_buf_len;              // len in chars; buf can hold len-1 chars
     volatile uint16_t read_buf_head;    // indexes first empty slot
     uint16_t read_buf_tail;             // indexes first full slot (not full if equals head)

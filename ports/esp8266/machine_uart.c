@@ -48,8 +48,8 @@ typedef struct _pyb_uart_obj_t {
     uint8_t parity;
     uint8_t stop;
     uint32_t baudrate;
-    uint16_t timeout;       // timeout waiting for first char (in ms)
-    uint16_t timeout_char;  // timeout waiting between chars (in ms)
+    uint32_t timeout;       // timeout waiting for first char (in ms)
+    uint32_t timeout_char;  // timeout waiting between chars (in ms)
 } pyb_uart_obj_t;
 
 STATIC const char *_parity_name[] = {"None", "1", "0"};

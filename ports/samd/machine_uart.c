@@ -60,8 +60,8 @@ typedef struct _machine_uart_obj_t {
     sercom_pad_config_t rts_pad_config;
     sercom_pad_config_t cts_pad_config;
     #endif
-    uint16_t timeout;       // timeout waiting for first char (in ms)
-    uint16_t timeout_char;  // timeout waiting between chars (in ms)
+    uint32_t timeout;       // timeout waiting for first char (in ms)
+    uint32_t timeout_char;  // timeout waiting between chars (in ms)
     bool new;
     ringbuf_t read_buffer;
     #if MICROPY_HW_UART_TXBUF

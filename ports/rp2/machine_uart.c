@@ -95,8 +95,8 @@ typedef struct _machine_uart_obj_t {
     uint8_t rx;
     uint8_t cts;
     uint8_t rts;
-    uint16_t timeout;       // timeout waiting for first char (in ms)
-    uint16_t timeout_char;  // timeout waiting between chars (in ms)
+    uint32_t timeout;       // timeout waiting for first char (in ms)
+    uint32_t timeout_char;  // timeout waiting between chars (in ms)
     uint8_t invert;
     uint8_t flow;
     ringbuf_t read_buffer;

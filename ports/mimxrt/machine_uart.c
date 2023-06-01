@@ -54,8 +54,8 @@ typedef struct _machine_uart_obj_t {
     struct _lpuart_handle handle;
     lpuart_config_t config;
     LPUART_Type *lpuart;
-    uint16_t timeout;       // timeout waiting for first char (in ms)
-    uint16_t timeout_char;  // timeout waiting between chars (in ms)
+    uint32_t timeout;       // timeout waiting for first char (in ms)
+    uint32_t timeout_char;  // timeout waiting between chars (in ms)
     uint8_t id;
     uint8_t invert;
     uint16_t tx_status;

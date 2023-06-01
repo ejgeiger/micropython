@@ -65,8 +65,8 @@ typedef struct _machine_uart_obj_t {
     gpio_num_t cts;
     uint16_t txbuf;
     uint16_t rxbuf;
-    uint16_t timeout;       // timeout waiting for first char (in ms)
-    uint16_t timeout_char;  // timeout waiting between chars (in ms)
+    uint32_t timeout;       // timeout waiting for first char (in ms)
+    uint32_t timeout_char;  // timeout waiting between chars (in ms)
     uint32_t invert;        // lines to invert
 } machine_uart_obj_t;
 
