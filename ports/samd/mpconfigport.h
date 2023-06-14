@@ -91,8 +91,6 @@
 #define MICROPY_PY_UCTYPES                  (1)
 #define MICROPY_PY_HEAPQ                    (1)
 #define MICROPY_PY_RANDOM                   (1)
-#define MICROPY_PY_DEFLATE                  (1)
-#define MICROPY_PY_ASYNCIO                  (1)
 #define MICROPY_PY_MACHINE_RTC              (1)
 #ifndef MICROPY_PY_MACHINE_ADC
 #define MICROPY_PY_MACHINE_ADC              (1)
@@ -135,7 +133,6 @@
 #define MICROPY_PY_MACHINE_WDT              (1)
 #define MICROPY_PY_MACHINE_WDT_INCLUDEFILE  "ports/samd/machine_wdt.c"
 #define MICROPY_PY_MACHINE_WDT_TIMEOUT_MS   (1)
-#define MICROPY_PY_ONEWIRE                  (1)
 #define MICROPY_PY_PLATFORM                 (1)
 #define MICROPY_PLATFORM_VERSION            "ASF4"
 
