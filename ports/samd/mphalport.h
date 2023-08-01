@@ -34,6 +34,7 @@
 #include "hal_gpio.h"
 #include "hpl_time_measure.h"
 #include "sam.h"
+#undef ERR_TIMEOUT
 
 #define MICROPY_HW_USB_CDC_TX_TIMEOUT (500)
 
