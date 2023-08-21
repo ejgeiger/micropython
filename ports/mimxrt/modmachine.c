@@ -5,6 +5,8 @@
  *
  * Copyright (c) 2019 Damien P. George
  * Copyright (c) 2020 Jim Mussared
+ * Copyright (c) 2021 ctd. Robert Hammelrath
+ * Copyright (c) 2023 David Casier
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,10 +44,12 @@
 #if FSL_FEATURE_BOOT_ROM_HAS_ROMAPI
 #include "fsl_romapi.h"
 #endif
+#include "fsl_dcdc.h"
 
 #if MICROPY_PY_MACHINE
 
 #include CPU_HEADER_H
+#include CLOCK_CONFIG_H
 
 typedef enum {
     MP_PWRON_RESET = 1,
@@ -96,10 +100,87 @@ STATIC mp_obj_t machine_reset_cause(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_cause_obj, machine_reset_cause);
 
-STATIC mp_obj_t machine_freq(void) {
-    return MP_OBJ_NEW_SMALL_INT(mp_hal_get_cpu_freq());
+STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
+    if (n_args == 0) {
+        return MP_OBJ_NEW_SMALL_INT(mp_hal_get_cpu_freq());
+    } else {
+        uint32_t freq = mp_obj_get_int(args[0]);
+        #if defined(MIMXRT106x_SERIES) || defined(MIMXRT105x_SERIES)
+        clock_arm_pll_config_t armPllConfig_BOARD_BootClockRUN = {
+            .loopDivider = 100,  // PLL loop divider, Fout = Fin * loopDivider / 2
+            .src = 0,            // Bypass clock source, 0 - OSC 24M, 1 - CLK1_P and CLK1_N
+        };
+        if (freq == (BOARD_BOOTCLOCKRUN_CORE_CLOCK / 4)) {
+            armPllConfig_BOARD_BootClockRUN.loopDivider = 75; // 900 MHz
+            CLOCK_InitArmPll(&armPllConfig_BOARD_BootClockRUN);
+            CLOCK_SetDiv(kCLOCK_ArmDiv, 5);  // 150 MHz
+            CLOCK_SetDiv(kCLOCK_IpgDiv, 2);  // 50 MHz
+            CLOCK_SetDiv(kCLOCK_PerclkDiv, 0);  // 50 Mhz
+            // Setting the VDD_SOC to 1.15V (< 528Mhz)
+            DCDC_AdjustRunTargetVoltage(DCDC, 0x0e);
+        } else if (freq == (BOARD_BOOTCLOCKRUN_CORE_CLOCK / 2)) {
+            armPllConfig_BOARD_BootClockRUN.loopDivider = 75;
+            CLOCK_InitArmPll(&armPllConfig_BOARD_BootClockRUN);
+            CLOCK_SetDiv(kCLOCK_ArmDiv, 2);  // 300 MHz
+            CLOCK_SetDiv(kCLOCK_IpgDiv, 2);  // 100 MHz
+            CLOCK_SetDiv(kCLOCK_PerclkDiv, 1);  // 50 Mhz
+            // Setting the VDD_SOC to 1.15V (< 528Mhz)
+            DCDC_AdjustRunTargetVoltage(DCDC, 0x0e);
+        } else if (freq == BOARD_BOOTCLOCKRUN_CORE_CLOCK) {
+            // Setting the VDD_SOC to 1.275V. for full speed.
+            DCDC_AdjustRunTargetVoltage(DCDC, 0x13);
+            armPllConfig_BOARD_BootClockRUN.loopDivider = 100;  // 1200 MHz
+            CLOCK_InitArmPll(&armPllConfig_BOARD_BootClockRUN);
+            CLOCK_SetDiv(kCLOCK_IpgDiv, 3);  // 150 MHz
+            CLOCK_SetDiv(kCLOCK_PerclkDiv, 1);  // 75 MHz
+            CLOCK_SetDiv(kCLOCK_ArmDiv, 1);  // 600 MHz
+        } else {
+            mp_raise_ValueError(MP_ERROR_TEXT("invalid frequency"));
+        }
+        #elif defined(MIMXRT102x_SERIES) || defined(MIMXRT101x_SERIES)
+        if (freq == (BOARD_BOOTCLOCKRUN_CORE_CLOCK / 4)) {
+            CLOCK_SetDiv(kCLOCK_AhbDiv, 3);  // 125 MHz
+            CLOCK_SetDiv(kCLOCK_IpgDiv, 1);  // 62.5 MHz
+            CLOCK_SetDiv(kCLOCK_PerclkDiv, 0);  // 62.5 MHz
+            // Setting the VDD_SOC to 1.15V (< 528Mhz)
+            DCDC_AdjustRunTargetVoltage(DCDC, 0x0e);
+        } else if (freq == (BOARD_BOOTCLOCKRUN_CORE_CLOCK / 2)) {
+            CLOCK_SetDiv(kCLOCK_AhbDiv, 1);  // 250 MHz
+            CLOCK_SetDiv(kCLOCK_IpgDiv, 1);  // 125 MHz
+            CLOCK_SetDiv(kCLOCK_PerclkDiv, 1);  // 62.5 MHz
+            DCDC_AdjustRunTargetVoltage(DCDC, 0x0e);
+        } else if (freq == BOARD_BOOTCLOCKRUN_CORE_CLOCK) {
+            // Setting the VDD_SOC to 1.275V
+            DCDC_AdjustRunTargetVoltage(DCDC, 0x13);
+            CLOCK_SetDiv(kCLOCK_IpgDiv, 3);  // 125 MHz
+            CLOCK_SetDiv(kCLOCK_PerclkDiv, 1);  // 62.5 MHz
+            CLOCK_SetDiv(kCLOCK_AhbDiv, 0);  // 500 MHz
+        } else {
+            mp_raise_ValueError(MP_ERROR_TEXT("invalid frequency"));
+        }
+        #elif defined(MIMXRT117x_SERIES)
+        if (freq > 100000000) {
+            freq /= 1000000;
+        }
+        if (freq >= 156 && freq <= 996) {
+            clock_root_config_t rootCfg = {0};
+            // First set the CPU to a safe source
+            rootCfg.mux = kCLOCK_M7_ClockRoot_MuxOscRc400M;
+            rootCfg.div = 1;
+            CLOCK_SetRootClock(kCLOCK_Root_M7, &rootCfg);
+            // Change the ARMPLL freq
+            CLOCK_InitArmPllWithFreq(freq);
+            // Enable it
+            rootCfg.mux = kCLOCK_M7_ClockRoot_MuxArmPllOut;
+            CLOCK_SetRootClock(kCLOCK_Root_M7, &rootCfg);
+        } else {
+            mp_raise_ValueError(MP_ERROR_TEXT("invalid frequency"));
+        }
+        #endif
+        return mp_const_none;
+    }
 }
-MP_DEFINE_CONST_FUN_OBJ_0(machine_freq_obj, machine_freq);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_freq_obj, 0, 1, machine_freq);
 
 STATIC mp_obj_t machine_idle(void) {
     MICROPY_EVENT_POLL_HOOK;
