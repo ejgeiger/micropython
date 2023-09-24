@@ -62,6 +62,7 @@ typedef struct _machine_uart_obj_t {
     uint8_t *txbuf;
     uint16_t txbuf_len;
     bool new;
+    void (*rxidle_handler)(void);
 } machine_uart_obj_t;
 
 typedef struct _iomux_table_t {
@@ -136,10 +137,19 @@ bool lpuart_set_iomux_cts(int8_t uart) {
     }
 }
 
+void machine_uart_register_handler(machine_uart_obj_t *self, void (*handler)(void)) {
+    self->rxidle_handler = handler;
+}
+
 void LPUART_UserCallback(LPUART_Type *base, lpuart_handle_t *handle, status_t status, void *userData) {
     machine_uart_obj_t *self = userData;
     if (kStatus_LPUART_TxIdle == status) {
         self->tx_status = kStatus_LPUART_TxIdle;
+    }
+
+    if (kStatus_LPUART_IdleLineDetected == status &&
+        self->rxidle_handler) {
+        self->rxidle_handler();
     }
 
     if (kStatus_LPUART_RxRingBufferOverrun == status) {
@@ -305,11 +315,16 @@ STATIC mp_obj_t machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args
         #else
         LPUART_Init(self->lpuart, &self->config, CLOCK_GetClockRootFreq(kCLOCK_UartClkRoot));
         #endif
+        self->config.rxIdleType = kLPUART_IdleTypeStartBit;
+        self->config.rxIdleConfig = kLPUART_IdleCharacter8;
+        LPUART_Init(self->lpuart, &self->config, BOARD_BOOTCLOCKRUN_UART_CLK_ROOT);
         LPUART_TransferCreateHandle(self->lpuart, &self->handle,  LPUART_UserCallback, self);
         uint8_t *buffer = m_new(uint8_t, rxbuf_len + 1);
         LPUART_TransferStartRingBuffer(self->lpuart, &self->handle, buffer, rxbuf_len);
         self->txbuf = m_new(uint8_t, txbuf_len); // Allocate the TX buffer.
         self->txbuf_len = txbuf_len;
+
+        LPUART_EnableInterrupts(self->lpuart, kLPUART_IdleLineInterruptEnable);
 
         // The Uart supports inverting, but not the fsl API, so it has to coded directly
         // And it has to be done after LPUART_Init.
@@ -350,6 +365,8 @@ STATIC mp_obj_t machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, 
     self->timeout = 1;
     self->timeout_char = 1;
     self->new = true;
+    self->rxidle_handler = NULL;
+
     LPUART_GetDefaultConfig(&self->config);
 
     // Configure board-specific pin MUX based on the hardware device number.
