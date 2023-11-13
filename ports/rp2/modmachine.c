@@ -122,6 +122,9 @@ STATIC mp_obj_t machine_lightsleep(size_t n_args, const mp_obj_t *args) {
 
     if (n_args == 1) {
         delay_ms = mp_obj_get_int(args[0]);
+        if (delay_ms <= 0) { 
+            return mp_const_none;
+        }
         if (delay_ms <= 1) {
             // Sleep is too small, just use standard delay.
             mp_hal_delay_ms(delay_ms);
